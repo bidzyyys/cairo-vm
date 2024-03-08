@@ -74,6 +74,8 @@ ark-std = { workspace = true, optional = true }
 # Enable arbitrary when fuzzing
 arbitrary = { workspace = true, features = ["derive"], optional = true }
 
+parity-scale-codec = { workspace = true }
+
 [dev-dependencies]
 assert_matches = "1.5.0"
 rstest = { version = "0.17.0", default-features = false }

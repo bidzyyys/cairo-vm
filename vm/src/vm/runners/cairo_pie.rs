@@ -103,6 +103,7 @@ mod serde_impl {
     use num_bigint::BigUint;
     use num_traits::Num;
     use serde::{ser::SerializeSeq, Serialize, Serializer};
+    use std::fmt::Write;
 
     pub const ADDR_BYTE_LEN: usize = 8;
     pub const FIELD_BYTE_LEN: usize = 32;
@@ -194,8 +195,10 @@ mod serde_impl {
 
         serializer.serialize_str(
             res.iter()
-                .map(|b| format!("{:02x}", b))
-                .collect::<String>()
+                .fold(String::new(), |mut output, b| {
+                    let _ = write!(output, "{b:02x}");
+                    output
+                })
                 .as_str(),
         )
     }

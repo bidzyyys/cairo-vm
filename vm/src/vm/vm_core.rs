@@ -799,7 +799,7 @@ impl VirtualMachine {
     pub fn load_data(
         &mut self,
         ptr: Relocatable,
-        data: &Vec<MaybeRelocatable>,
+        data: &[MaybeRelocatable],
     ) -> Result<Relocatable, MemoryError> {
         if ptr.segment_index == 0 {
             self.instruction_cache.resize(data.len(), None);

@@ -17,6 +17,8 @@ use felt::Felt252;
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
 
+use parity_scale_codec::{Decode, Encode};
+
 pub trait HintProcessorLogic {
     //Executes the hint which's data is provided by a dynamic structure previously created by compile_hint
     fn execute_hint(
@@ -79,7 +81,7 @@ fn get_ids_data(
 }
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode)]
 pub struct HintReference {
     pub offset1: OffsetValue,
     pub offset2: OffsetValue,

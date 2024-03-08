@@ -11,6 +11,8 @@ use felt::Felt252;
 use num_traits::{ToPrimitive, Zero};
 use serde::{Deserialize, Serialize};
 
+use parity_scale_codec::{Decode, Encode};
+
 #[cfg(all(feature = "arbitrary", feature = "std"))]
 use arbitrary::Arbitrary;
 
@@ -21,8 +23,29 @@ pub struct Relocatable {
     pub offset: usize,
 }
 
+impl Encode for Relocatable {
+    fn encode(&self) -> Vec<u8> {
+        (self.segment_index as i64, self.offset as u64).encode()
+    }
+}
+
+impl Decode for Relocatable {
+    fn decode<I: parity_scale_codec::Input>(
+        input: &mut I,
+    ) -> Result<Self, parity_scale_codec::Error> {
+        let res =
+            <(i64, u64)>::decode(input).map_err(|e| e.chain("Could not decode `Relocatable`"))?;
+        Ok(Relocatable {
+            segment_index: res.0 as isize,
+            offset: res.1 as usize,
+        })
+    }
+}
+
 #[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(Arbitrary))]
-#[derive(Eq, Ord, Hash, PartialEq, PartialOrd, Clone, Debug, Serialize, Deserialize)]
+#[derive(
+    Eq, Ord, Hash, PartialEq, PartialOrd, Clone, Debug, Serialize, Deserialize, Encode, Decode,
+)]
 pub enum MaybeRelocatable {
     RelocatableValue(Relocatable),
     Int(Felt252),
@@ -337,7 +360,7 @@ impl<'a> Add<usize> for &'a Relocatable {
 /// If the value is RelocatableValue, it will relocate it according to the relocation_table
 pub fn relocate_value(
     value: MaybeRelocatable,
-    relocation_table: &Vec<usize>,
+    relocation_table: &[usize],
 ) -> Result<Felt252, MemoryError> {
     match value {
         MaybeRelocatable::Int(num) => Ok(num),
@@ -351,7 +374,7 @@ pub fn relocate_value(
 // Relocates a Relocatable value according to the relocation_table
 pub fn relocate_address(
     relocatable: Relocatable,
-    relocation_table: &Vec<usize>,
+    relocation_table: &[usize],
 ) -> Result<usize, MemoryError> {
     let (segment_index, offset) = if relocatable.segment_index >= 0 {
         (relocatable.segment_index as usize, relocatable.offset)

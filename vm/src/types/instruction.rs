@@ -4,11 +4,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::vm::decoding::decoder::decode_instruction;
 
+use parity_scale_codec::{Decode, Encode};
+
 #[cfg(feature = "arbitrary")]
 use arbitrary::Arbitrary;
 
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Encode, Decode)]
 pub enum Register {
     AP,
     FP,

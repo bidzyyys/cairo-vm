@@ -230,7 +230,7 @@ fn take_until_unbalanced(
                 .ok_or_else(|| Err::Error(Error::from_error_kind(i, ErrorKind::TakeUntil)))?
                 .chars();
             match it.next().unwrap_or_default() {
-                c if c == '\\' => {
+                '\\' => {
                     // Skip the escape char `\`.
                     index += '\\'.len_utf8();
                     // Skip also the following char.

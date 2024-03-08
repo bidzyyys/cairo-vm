@@ -307,6 +307,7 @@ dependencies = [
  "num-bigint",
  "num-integer",
  "num-traits 0.2.17",
+ "parity-scale-codec",
  "proptest",
  "rstest",
  "serde",
@@ -737,6 +738,7 @@ dependencies = [
  "num-integer",
  "num-prime",
  "num-traits 0.2.17",
+ "parity-scale-codec",
  "proptest",
  "rand",
  "rstest",
@@ -1824,6 +1826,7 @@ dependencies = [
  "bitvec",
  "byte-slice-cast",
  "impl-trait-for-tuples",
+ "parity-scale-codec-derive",
  "serde",
 ]
 

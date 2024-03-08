@@ -34,12 +34,14 @@ use num_traits::{Num, Pow};
 use serde::{de, de::MapAccess, de::SeqAccess, Deserialize, Deserializer, Serialize};
 use serde_json::Number;
 
+use parity_scale_codec::{Decode, Encode};
+
 #[cfg(all(feature = "arbitrary", feature = "std"))]
 use arbitrary::{self, Arbitrary, Unstructured};
 
 // This enum is used to deserialize program builtins into &str and catch non-valid names
 #[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(Arbitrary))]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone, Eq, Hash, Encode, Decode)]
 #[allow(non_camel_case_types)]
 pub enum BuiltinName {
     output,
@@ -85,7 +87,7 @@ pub struct ProgramJson {
 }
 
 #[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(Arbitrary))]
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Encode, Decode)]
 pub struct HintParams {
     pub code: String,
     pub accessible_scopes: Vec<String>,
@@ -100,11 +102,70 @@ pub struct FlowTrackingData {
     pub reference_ids: HashMap<String, usize>,
 }
 
+impl Encode for FlowTrackingData {
+    fn encode_to<T: parity_scale_codec::Output + ?Sized>(&self, dest: &mut T) {
+        let reference_ids = self
+            .reference_ids
+            .iter()
+            .map(|(s, v)| (s.clone(), *v as u64))
+            .collect::<BTreeMap<String, u64>>();
+
+        parity_scale_codec::Encode::encode_to(&self.ap_tracking, dest);
+        parity_scale_codec::Encode::encode_to(&reference_ids, dest);
+    }
+}
+
+impl Decode for FlowTrackingData {
+    fn decode<I: parity_scale_codec::Input>(
+        input: &mut I,
+    ) -> Result<Self, parity_scale_codec::Error> {
+        let ap_tracking = <ApTracking as Decode>::decode(input)
+            .map_err(|e| e.chain("Could not decode `FlowTrackingData::ap_tracking`"))?;
+
+        let reference_ids = <BTreeMap<String, u64> as Decode>::decode(input)
+            .map_err(|e| e.chain("Could not decode `FlowTrackingData::reference_ids`"))?
+            .into_iter()
+            .map(|(s, v)| (s, v as usize))
+            .collect::<HashMap<_, _>>();
+
+        Ok(FlowTrackingData {
+            ap_tracking,
+            reference_ids,
+        })
+    }
+}
+
 #[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(Arbitrary))]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct ApTracking {
     pub group: usize,
     pub offset: usize,
+}
+
+impl Encode for ApTracking {
+    fn encode_to<T: parity_scale_codec::Output + ?Sized>(&self, dest: &mut T) {
+        let group = self.group as u64;
+        let offset = self.offset as u64;
+
+        parity_scale_codec::Encode::encode_to(&group, dest);
+        parity_scale_codec::Encode::encode_to(&offset, dest);
+    }
+}
+
+impl Decode for ApTracking {
+    fn decode<I: parity_scale_codec::Input>(
+        input: &mut I,
+    ) -> Result<Self, parity_scale_codec::Error> {
+        let group = <u64 as Decode>::decode(input)
+            .map_err(|e| e.chain("Could not decode `SharedProgramData::group`"))?
+            as usize;
+
+        let offset = <u64 as Decode>::decode(input)
+            .map_err(|e| e.chain("Could not decode `SharedProgramData::offset`"))?
+            as usize;
+
+        Ok(ApTracking { group, offset })
+    }
 }
 
 impl ApTracking {
@@ -137,11 +198,72 @@ pub struct Identifier {
     pub cairo_type: Option<String>,
 }
 
+impl Encode for Identifier {
+    fn encode(&self) -> Vec<u8> {
+        let val = self.clone();
+        let members: Option<BTreeMap<String, Member>> =
+            val.members.map(|m| m.into_iter().collect());
+        (
+            val.pc.map(|v| v as u64),
+            val.type_,
+            val.value,
+            val.full_name,
+            members,
+            val.cairo_type,
+        )
+            .encode()
+    }
+}
+
+impl Decode for Identifier {
+    fn decode<I: parity_scale_codec::Input>(
+        input: &mut I,
+    ) -> Result<Self, parity_scale_codec::Error> {
+        let res = <(
+            Option<u64>,
+            Option<String>,
+            Option<Felt252>,
+            Option<String>,
+            Option<BTreeMap<String, Member>>,
+            Option<String>,
+        )>::decode(input)?;
+
+        Ok(Identifier {
+            pc: res.0.map(|v| v as usize),
+            type_: res.1,
+            value: res.2,
+            full_name: res.3,
+            members: res.4.map(<HashMap<String, Member>>::from_iter),
+            cairo_type: res.5,
+        })
+    }
+}
+
 #[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(Arbitrary))]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Member {
     pub cairo_type: String,
     pub offset: usize,
+}
+
+impl Encode for Member {
+    fn encode(&self) -> Vec<u8> {
+        let val = self.clone();
+        (val.cairo_type, val.offset as u64).encode()
+    }
+}
+
+impl Decode for Member {
+    fn decode<I: parity_scale_codec::Input>(
+        input: &mut I,
+    ) -> Result<Self, parity_scale_codec::Error> {
+        let res = <(String, u64)>::decode(input)?;
+
+        Ok(Member {
+            cairo_type: res.0,
+            offset: res.1 as usize,
+        })
+    }
 }
 
 #[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(Arbitrary))]
@@ -158,7 +280,37 @@ pub struct Attribute {
     pub flow_tracking_data: Option<FlowTrackingData>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+impl Encode for Attribute {
+    fn encode(&self) -> Vec<u8> {
+        let val = self.clone();
+        (
+            val.name,
+            val.start_pc as u64,
+            val.end_pc as u64,
+            val.value,
+            val.flow_tracking_data,
+        )
+            .encode()
+    }
+}
+
+impl Decode for Attribute {
+    fn decode<I: parity_scale_codec::Input>(
+        input: &mut I,
+    ) -> Result<Self, parity_scale_codec::Error> {
+        let res = <(String, u64, u64, String, Option<FlowTrackingData>)>::decode(input)?;
+
+        Ok(Attribute {
+            name: res.0,
+            start_pc: res.1 as usize,
+            end_pc: res.2 as usize,
+            value: res.3,
+            flow_tracking_data: res.4,
+        })
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Encode, Decode)]
 pub struct Location {
     pub end_line: u32,
     pub end_col: u32,
@@ -202,20 +354,20 @@ pub struct DebugInfo {
 }
 
 #[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(Arbitrary))]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Encode, Decode)]
 pub struct InstructionLocation {
     pub inst: Location,
     pub hints: Vec<HintLocation>,
 }
 
 #[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(Arbitrary))]
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Encode, Decode)]
 pub struct InputFile {
     pub filename: String,
 }
 
 #[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(Arbitrary))]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Encode, Decode)]
 pub struct HintLocation {
     pub location: Location,
     pub n_prefix_newlines: u32,
@@ -273,8 +425,34 @@ pub struct Reference {
     pub value_address: ValueAddress,
 }
 
+impl Encode for Reference {
+    fn encode(&self) -> Vec<u8> {
+        let val = self.clone();
+        (
+            val.ap_tracking_data,
+            val.pc.map(|v| v as u64),
+            val.value_address,
+        )
+            .encode()
+    }
+}
+
+impl Decode for Reference {
+    fn decode<I: parity_scale_codec::Input>(
+        input: &mut I,
+    ) -> Result<Self, parity_scale_codec::Error> {
+        let res = <(ApTracking, Option<u64>, ValueAddress)>::decode(input)?;
+
+        Ok(Reference {
+            ap_tracking_data: res.0,
+            pc: res.1.map(|v| v as usize),
+            value_address: res.2,
+        })
+    }
+}
+
 #[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(Arbitrary))]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Encode, Decode)]
 pub enum OffsetValue {
     Immediate(Felt252),
     Value(i32),
@@ -282,7 +460,7 @@ pub enum OffsetValue {
 }
 
 #[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(Arbitrary))]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Encode, Decode)]
 pub struct ValueAddress {
     pub offset1: OffsetValue,
     pub offset2: OffsetValue,
@@ -327,7 +505,7 @@ impl<'de> de::Visitor<'de> for Felt252Visitor {
             let no_prefix_hex = deserialize_utils::maybe_add_padding(no_prefix_hex.to_string());
             Ok(Felt252::from_str_radix(&no_prefix_hex, 16).map_err(de::Error::custom)?)
         } else {
-            Err(String::from("hex prefix error")).map_err(de::Error::custom)
+            Err(de::Error::custom(String::from("hex prefix error")))
         }
     }
 }
@@ -355,7 +533,7 @@ impl<'de> de::Visitor<'de> for MaybeRelocatableVisitor {
                     Felt252::from_str_radix(&no_prefix_hex, 16).map_err(de::Error::custom)?,
                 ));
             } else {
-                return Err(String::from("hex prefix error")).map_err(de::Error::custom);
+                return Err(de::Error::custom(String::from("hex prefix error")));
             };
         }
         Ok(data)
@@ -518,6 +696,76 @@ mod tests {
 
     #[cfg(target_arch = "wasm32")]
     use wasm_bindgen_test::*;
+
+    #[test]
+    fn test_encode_decode_attribute() {
+        let attributes: Vec<Attribute> = vec![
+            Attribute {
+                name: String::from("error_message"),
+                start_pc: 379,
+                end_pc: 381,
+                value: String::from("SafeUint256: addition overflow"),
+                flow_tracking_data: Some(FlowTrackingData {
+                    ap_tracking: ApTracking {
+                        group: 14,
+                        offset: 35,
+                    },
+                    reference_ids: HashMap::new(),
+                }),
+            },
+            Attribute {
+                name: String::from("error_message"),
+                start_pc: 402,
+                end_pc: 404,
+                value: String::from("SafeUint256: subtraction overflow"),
+                flow_tracking_data: Some(FlowTrackingData {
+                    ap_tracking: ApTracking {
+                        group: 15,
+                        offset: 60,
+                    },
+                    reference_ids: HashMap::new(),
+                }),
+            },
+        ];
+        for attribute in attributes.iter() {
+            assert_eq!(
+                *attribute,
+                Attribute::decode(&mut &attribute.encode()[..]).unwrap()
+            )
+        }
+    }
+
+    #[test]
+    fn test_encode_decode_flow_tracking_data() {
+        let flow_tracking_data = FlowTrackingData {
+            ap_tracking: ApTracking {
+                group: 0,
+                offset: 0,
+            },
+            reference_ids: HashMap::from([
+                (
+                    String::from("starkware.cairo.common.math.split_felt.high"),
+                    0,
+                ),
+                (
+                    String::from("starkware.cairo.common.math.split_felt.low"),
+                    14,
+                ),
+                (
+                    String::from("starkware.cairo.common.math.split_felt.range_check_ptr"),
+                    16,
+                ),
+                (
+                    String::from("starkware.cairo.common.math.split_felt.value"),
+                    12,
+                ),
+            ]),
+        };
+        assert_eq!(
+            flow_tracking_data,
+            FlowTrackingData::decode(&mut &flow_tracking_data.encode()[..]).unwrap()
+        )
+    }
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
