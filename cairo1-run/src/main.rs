@@ -25,6 +25,7 @@ use cairo_lang_sierra_ap_change::calc_ap_changes;
 use cairo_lang_sierra_gas::gas_info::GasInfo;
 use cairo_lang_sierra_to_casm::compiler::CairoProgram;
 use cairo_lang_sierra_to_casm::compiler::CompilationError;
+use cairo_lang_sierra_to_casm::compiler::SierraToCasmConfig;
 use cairo_lang_sierra_to_casm::metadata::Metadata;
 use cairo_lang_sierra_to_casm::metadata::MetadataComputationConfig;
 use cairo_lang_sierra_to_casm::metadata::MetadataError;
@@ -173,7 +174,7 @@ fn run(args: impl Iterator<Item = String>) -> Result<Vec<MaybeRelocatable>, Erro
         replace_ids: true,
         ..CompilerConfig::default()
     };
-    let sierra_program = (*compile_cairo_project_at_path(&args.filename, compiler_config)
+    let sierra_program = (compile_cairo_project_at_path(&args.filename, compiler_config)
         .map_err(|err| Error::SierraCompilation(err.to_string()))?)
     .clone();
 
@@ -183,8 +184,14 @@ fn run(args: impl Iterator<Item = String>) -> Result<Vec<MaybeRelocatable>, Erro
     let sierra_program_registry = ProgramRegistry::<CoreType, CoreLibfunc>::new(&sierra_program)?;
     let type_sizes =
         get_type_size_map(&sierra_program, &sierra_program_registry).unwrap_or_default();
-    let casm_program =
-        cairo_lang_sierra_to_casm::compiler::compile(&sierra_program, &metadata, gas_usage_check)?;
+    let casm_program = cairo_lang_sierra_to_casm::compiler::compile(
+        &sierra_program,
+        &metadata,
+        SierraToCasmConfig {
+            gas_usage_check,
+            max_bytecode_size: usize::MAX,
+        },
+    )?;
 
     let main_func = find_function(&sierra_program, "::main")?;
 
@@ -201,9 +208,15 @@ fn run(args: impl Iterator<Item = String>) -> Result<Vec<MaybeRelocatable>, Erro
     )?;
     let footer = create_code_footer();
 
-    let check_gas_usage = true;
-    let metadata = calc_metadata(&sierra_program, Default::default(), false)?;
-    let casm_program = compile(&sierra_program, &metadata, check_gas_usage)?;
+    let metadata = calc_metadata(&sierra_program, Default::default())?;
+    let casm_program = compile(
+        &sierra_program,
+        &metadata,
+        SierraToCasmConfig {
+            gas_usage_check: true,
+            max_bytecode_size: usize::MAX,
+        },
+    )?;
 
     let instructions = chain!(
         entry_code.iter(),
@@ -537,7 +550,7 @@ fn create_metadata(
     metadata_config: Option<MetadataComputationConfig>,
 ) -> Result<Metadata, VirtualMachineError> {
     if let Some(metadata_config) = metadata_config {
-        calc_metadata(sierra_program, metadata_config, false).map_err(|err| match err {
+        calc_metadata(sierra_program, metadata_config).map_err(|err| match err {
             MetadataError::ApChangeError(_) => VirtualMachineError::Unexpected,
             MetadataError::CostError(_) => VirtualMachineError::Unexpected,
         })

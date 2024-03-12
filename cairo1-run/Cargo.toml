@@ -11,9 +11,9 @@ keywords.workspace = true
 [dependencies]
 cairo-vm = {workspace = true, features = ["std", "cairo-1-hints"]}
 
-cairo-lang-sierra-type-size = { version = "2.3.1", default-features = false }
-cairo-lang-sierra-ap-change = { version = "2.3.1", default-features = false }
-cairo-lang-sierra-gas = { version = "2.3.1", default-features = false } 
+cairo-lang-sierra-type-size = { workspace = true, default-features = false }
+cairo-lang-sierra-ap-change = { workspace = true, default-features = false }
+cairo-lang-sierra-gas = { workspace = true, default-features = false } 
 cairo-lang-sierra-to-casm.workspace = true 
 cairo-lang-compiler.workspace = true
 cairo-lang-sierra.workspace = true
