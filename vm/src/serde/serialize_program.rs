@@ -249,7 +249,7 @@ mod tests {
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn program_json_from_program_test() {
-        let programs_bytes: Vec<Vec<u8>> = [
+        let programs_bytes: Vec<Vec<u8>> = Vec::from([
             include_bytes!("../../../cairo_programs/_keccak.json").to_vec(),
             include_bytes!("../../../cairo_programs/assert_nn.json").to_vec(),
             include_bytes!("../../../cairo_programs/bitwise_recursion.json").to_vec(),
@@ -272,8 +272,7 @@ mod tests {
             include_bytes!("../../../cairo_programs/secp_ec.json").to_vec(),
             include_bytes!("../../../cairo_programs/sha256_test.json").to_vec(),
             include_bytes!("../../../cairo_programs/uint256_integration_tests.json").to_vec(),
-        ]
-        .to_vec();
+        ]);
         for bytes in programs_bytes {
             let original_program = Program::from_bytes(&bytes, Some("main")).unwrap();
 
@@ -290,7 +289,7 @@ mod tests {
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn serialize_and_deserialize_programs() {
-        let programs_bytes: Vec<Vec<u8>> = [
+        let programs_bytes: Vec<Vec<u8>> = Vec::from([
             include_bytes!("../../../cairo_programs/_keccak.json").to_vec(),
             include_bytes!("../../../cairo_programs/assert_nn.json").to_vec(),
             include_bytes!("../../../cairo_programs/bitwise_recursion.json").to_vec(),
@@ -313,8 +312,7 @@ mod tests {
             include_bytes!("../../../cairo_programs/secp_ec.json").to_vec(),
             include_bytes!("../../../cairo_programs/sha256_test.json").to_vec(),
             include_bytes!("../../../cairo_programs/uint256_integration_tests.json").to_vec(),
-        ]
-        .to_vec();
+        ]);
 
         for bytes in programs_bytes {
             let original_program = Program::from_bytes(&bytes, Some("main")).unwrap();
