@@ -6,8 +6,6 @@ use num_integer::Integer;
 use num_traits::{Bounded, FromPrimitive, Num, One, Pow, Signed, ToPrimitive, Zero};
 use serde::{Deserialize, Serialize};
 
-use parity_scale_codec::{Decode, Encode};
-
 use core::{
     convert::Into,
     fmt,
@@ -72,8 +70,10 @@ macro_rules! felt_str {
 }
 
 #[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(Arbitrary))]
-#[derive(
-    Eq, Hash, PartialEq, PartialOrd, Ord, Clone, Deserialize, Default, Serialize, Encode, Decode,
+#[derive(Eq, Hash, PartialEq, PartialOrd, Ord, Clone, Deserialize, Default, Serialize)]
+#[cfg_attr(
+    feature = "parity-scale-codec",
+    derive(parity_scale_codec::Encode, parity_scale_codec::Decode)
 )]
 pub struct Felt252 {
     pub(crate) value: FeltBigInt<FIELD_HIGH, FIELD_LOW>,
@@ -1024,6 +1024,9 @@ mod test {
 
     use proptest::prelude::*;
 
+    #[cfg(all(test, feature = "parity-scale-codec"))]
+    use parity_scale_codec::{Decode, Encode};
+
     proptest! {
         #[test]
         #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
@@ -1724,6 +1727,7 @@ mod test {
     #[test]
     // Tests that scale encode operation returns the right value.
     // We chose the value from this example https://docs.substrate.io/reference/scale-codec/.
+    #[cfg(all(test, feature = "parity-scale-codec"))]
     fn test_encode_0() {
         let val: FeltBigInt<FIELD_HIGH, FIELD_LOW> = FeltBigInt::from_u8(0).unwrap();
         let expected_result = [0];
@@ -1731,6 +1735,7 @@ mod test {
     }
 
     #[test]
+    #[cfg(all(test, feature = "parity-scale-codec"))]
     // Tests that scale encode operation returns the right value.
     // We chose the value from this example https://docs.substrate.io/reference/scale-codec/.
     fn test_encode_1() {
@@ -1740,6 +1745,7 @@ mod test {
     }
 
     #[test]
+    #[cfg(all(test, feature = "parity-scale-codec"))]
     // Tests that scale encode operation returns the right value.
     // We chose the value from this example https://docs.substrate.io/reference/scale-codec/.
     fn test_encode_42() {
@@ -1749,6 +1755,7 @@ mod test {
     }
 
     #[test]
+    #[cfg(all(test, feature = "parity-scale-codec"))]
     // Tests that scale encode operation returns the right value.
     // We chose the value from this example https://docs.substrate.io/reference/scale-codec/.
     fn test_encode_69() {
@@ -1758,6 +1765,7 @@ mod test {
     }
 
     #[test]
+    #[cfg(all(test, feature = "parity-scale-codec"))]
     // Tests that scale encode operation returns the right value.
     // We chose the value from this example https://docs.substrate.io/reference/scale-codec/.
     fn test_encode_65535() {
@@ -1767,6 +1775,7 @@ mod test {
     }
 
     #[test]
+    #[cfg(all(test, feature = "parity-scale-codec"))]
     // Tests that scale encode operation returns the right value.
     // We chose the value from this example https://docs.substrate.io/reference/scale-codec/.
     fn test_encode_100000000000000() {
@@ -1782,6 +1791,7 @@ mod test {
         assert_eq!(encoded, expected_result)
     }
     #[test]
+    #[cfg(all(test, feature = "parity-scale-codec"))]
     // Tests that scale encode operation returns the right value.
     // We chose the value from this example https://docs.substrate.io/reference/scale-codec/.
     fn test_decode_0() {
@@ -1791,6 +1801,7 @@ mod test {
     }
 
     #[test]
+    #[cfg(all(test, feature = "parity-scale-codec"))]
     // Tests that scale encode operation returns the right value.
     // We chose the value from this example https://docs.substrate.io/reference/scale-codec/.
     fn test_decode_1() {
@@ -1800,6 +1811,7 @@ mod test {
     }
 
     #[test]
+    #[cfg(all(test, feature = "parity-scale-codec"))]
     // Tests that scale encode operation returns the right value.
     // We chose the value from this example https://docs.substrate.io/reference/scale-codec/.
     fn test_decode_42() {
@@ -1809,6 +1821,7 @@ mod test {
     }
 
     #[test]
+    #[cfg(all(test, feature = "parity-scale-codec"))]
     // Tests that scale encode operation returns the right value.
     // We chose the value from this example https://docs.substrate.io/reference/scale-codec/.
     fn test_decode_69() {
@@ -1818,6 +1831,7 @@ mod test {
     }
 
     #[test]
+    #[cfg(all(test, feature = "parity-scale-codec"))]
     // Tests that scale encode operation returns the right value.
     // We chose the value from this example https://docs.substrate.io/reference/scale-codec/.
     fn test_decode_65535() {
@@ -1827,6 +1841,7 @@ mod test {
         assert_eq!(FeltBigInt::decode(&mut &val[..]).unwrap(), expected_result)
     }
 
+    #[cfg(all(test, feature = "parity-scale-codec"))]
     #[test]
     // Tests that scale decode operation returns the right value.
     // We chose the value from this example https://docs.substrate.io/reference/scale-codec/.

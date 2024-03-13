@@ -34,14 +34,16 @@ use num_traits::{Num, Pow};
 use serde::{de, de::MapAccess, de::SeqAccess, Deserialize, Deserializer, Serialize};
 use serde_json::Number;
 
-use parity_scale_codec::{Decode, Encode};
-
 #[cfg(all(feature = "arbitrary", feature = "std"))]
 use arbitrary::{self, Arbitrary, Unstructured};
 
 // This enum is used to deserialize program builtins into &str and catch non-valid names
 #[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(Arbitrary))]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone, Eq, Hash, Encode, Decode)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone, Eq, Hash)]
+#[cfg_attr(
+    feature = "parity-scale-codec",
+    derive(parity_scale_codec::Encode, parity_scale_codec::Decode)
+)]
 #[allow(non_camel_case_types)]
 pub enum BuiltinName {
     output,
@@ -87,7 +89,11 @@ pub struct ProgramJson {
 }
 
 #[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(Arbitrary))]
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Encode, Decode)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "parity-scale-codec",
+    derive(parity_scale_codec::Encode, parity_scale_codec::Decode)
+)]
 pub struct HintParams {
     pub code: String,
     pub accessible_scopes: Vec<String>,
@@ -102,7 +108,8 @@ pub struct FlowTrackingData {
     pub reference_ids: HashMap<String, usize>,
 }
 
-impl Encode for FlowTrackingData {
+#[cfg(feature = "parity-scale-codec")]
+impl parity_scale_codec::Encode for FlowTrackingData {
     fn encode_to<T: parity_scale_codec::Output + ?Sized>(&self, dest: &mut T) {
         let reference_ids = self
             .reference_ids
@@ -115,14 +122,15 @@ impl Encode for FlowTrackingData {
     }
 }
 
-impl Decode for FlowTrackingData {
+#[cfg(feature = "parity-scale-codec")]
+impl parity_scale_codec::Decode for FlowTrackingData {
     fn decode<I: parity_scale_codec::Input>(
         input: &mut I,
     ) -> Result<Self, parity_scale_codec::Error> {
-        let ap_tracking = <ApTracking as Decode>::decode(input)
+        let ap_tracking = <ApTracking as parity_scale_codec::Decode>::decode(input)
             .map_err(|e| e.chain("Could not decode `FlowTrackingData::ap_tracking`"))?;
 
-        let reference_ids = <BTreeMap<String, u64> as Decode>::decode(input)
+        let reference_ids = <BTreeMap<String, u64> as parity_scale_codec::Decode>::decode(input)
             .map_err(|e| e.chain("Could not decode `FlowTrackingData::reference_ids`"))?
             .into_iter()
             .map(|(s, v)| (s, v as usize))
@@ -142,7 +150,8 @@ pub struct ApTracking {
     pub offset: usize,
 }
 
-impl Encode for ApTracking {
+#[cfg(feature = "parity-scale-codec")]
+impl parity_scale_codec::Encode for ApTracking {
     fn encode_to<T: parity_scale_codec::Output + ?Sized>(&self, dest: &mut T) {
         let group = self.group as u64;
         let offset = self.offset as u64;
@@ -152,15 +161,16 @@ impl Encode for ApTracking {
     }
 }
 
-impl Decode for ApTracking {
+#[cfg(feature = "parity-scale-codec")]
+impl parity_scale_codec::Decode for ApTracking {
     fn decode<I: parity_scale_codec::Input>(
         input: &mut I,
     ) -> Result<Self, parity_scale_codec::Error> {
-        let group = <u64 as Decode>::decode(input)
+        let group = <u64 as parity_scale_codec::Decode>::decode(input)
             .map_err(|e| e.chain("Could not decode `SharedProgramData::group`"))?
             as usize;
 
-        let offset = <u64 as Decode>::decode(input)
+        let offset = <u64 as parity_scale_codec::Decode>::decode(input)
             .map_err(|e| e.chain("Could not decode `SharedProgramData::offset`"))?
             as usize;
 
@@ -198,7 +208,8 @@ pub struct Identifier {
     pub cairo_type: Option<String>,
 }
 
-impl Encode for Identifier {
+#[cfg(feature = "parity-scale-codec")]
+impl parity_scale_codec::Encode for Identifier {
     fn encode(&self) -> Vec<u8> {
         let val = self.clone();
         let members: Option<BTreeMap<String, Member>> =
@@ -215,7 +226,8 @@ impl Encode for Identifier {
     }
 }
 
-impl Decode for Identifier {
+#[cfg(feature = "parity-scale-codec")]
+impl parity_scale_codec::Decode for Identifier {
     fn decode<I: parity_scale_codec::Input>(
         input: &mut I,
     ) -> Result<Self, parity_scale_codec::Error> {
@@ -246,14 +258,16 @@ pub struct Member {
     pub offset: usize,
 }
 
-impl Encode for Member {
+#[cfg(feature = "parity-scale-codec")]
+impl parity_scale_codec::Encode for Member {
     fn encode(&self) -> Vec<u8> {
         let val = self.clone();
         (val.cairo_type, val.offset as u64).encode()
     }
 }
 
-impl Decode for Member {
+#[cfg(feature = "parity-scale-codec")]
+impl parity_scale_codec::Decode for Member {
     fn decode<I: parity_scale_codec::Input>(
         input: &mut I,
     ) -> Result<Self, parity_scale_codec::Error> {
@@ -280,7 +294,8 @@ pub struct Attribute {
     pub flow_tracking_data: Option<FlowTrackingData>,
 }
 
-impl Encode for Attribute {
+#[cfg(feature = "parity-scale-codec")]
+impl parity_scale_codec::Encode for Attribute {
     fn encode(&self) -> Vec<u8> {
         let val = self.clone();
         (
@@ -294,7 +309,8 @@ impl Encode for Attribute {
     }
 }
 
-impl Decode for Attribute {
+#[cfg(feature = "parity-scale-codec")]
+impl parity_scale_codec::Decode for Attribute {
     fn decode<I: parity_scale_codec::Input>(
         input: &mut I,
     ) -> Result<Self, parity_scale_codec::Error> {
@@ -310,7 +326,11 @@ impl Decode for Attribute {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Encode, Decode)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "parity-scale-codec",
+    derive(parity_scale_codec::Encode, parity_scale_codec::Decode)
+)]
 pub struct Location {
     pub end_line: u32,
     pub end_col: u32,
@@ -354,20 +374,32 @@ pub struct DebugInfo {
 }
 
 #[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(Arbitrary))]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Encode, Decode)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+#[cfg_attr(
+    feature = "parity-scale-codec",
+    derive(parity_scale_codec::Encode, parity_scale_codec::Decode)
+)]
 pub struct InstructionLocation {
     pub inst: Location,
     pub hints: Vec<HintLocation>,
 }
 
 #[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(Arbitrary))]
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Encode, Decode)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "parity-scale-codec",
+    derive(parity_scale_codec::Encode, parity_scale_codec::Decode)
+)]
 pub struct InputFile {
     pub filename: String,
 }
 
 #[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(Arbitrary))]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Encode, Decode)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+#[cfg_attr(
+    feature = "parity-scale-codec",
+    derive(parity_scale_codec::Encode, parity_scale_codec::Decode)
+)]
 pub struct HintLocation {
     pub location: Location,
     pub n_prefix_newlines: u32,
@@ -425,7 +457,8 @@ pub struct Reference {
     pub value_address: ValueAddress,
 }
 
-impl Encode for Reference {
+#[cfg(feature = "parity-scale-codec")]
+impl parity_scale_codec::Encode for Reference {
     fn encode(&self) -> Vec<u8> {
         let val = self.clone();
         (
@@ -437,7 +470,8 @@ impl Encode for Reference {
     }
 }
 
-impl Decode for Reference {
+#[cfg(feature = "parity-scale-codec")]
+impl parity_scale_codec::Decode for Reference {
     fn decode<I: parity_scale_codec::Input>(
         input: &mut I,
     ) -> Result<Self, parity_scale_codec::Error> {
@@ -452,7 +486,11 @@ impl Decode for Reference {
 }
 
 #[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(Arbitrary))]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Encode, Decode)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+#[cfg_attr(
+    feature = "parity-scale-codec",
+    derive(parity_scale_codec::Encode, parity_scale_codec::Decode)
+)]
 pub enum OffsetValue {
     Immediate(Felt252),
     Value(i32),
@@ -460,7 +498,11 @@ pub enum OffsetValue {
 }
 
 #[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(Arbitrary))]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Encode, Decode)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+#[cfg_attr(
+    feature = "parity-scale-codec",
+    derive(parity_scale_codec::Encode, parity_scale_codec::Decode)
+)]
 pub struct ValueAddress {
     pub offset1: OffsetValue,
     pub offset2: OffsetValue,
@@ -697,7 +739,11 @@ mod tests {
     #[cfg(target_arch = "wasm32")]
     use wasm_bindgen_test::*;
 
+    #[cfg(all(test, feature = "parity-scale-codec"))]
+    use parity_scale_codec::{Decode, Encode};
+
     #[test]
+    #[cfg(all(test, feature = "parity-scale-codec"))]
     fn test_encode_decode_attribute() {
         let attributes: Vec<Attribute> = vec![
             Attribute {
@@ -736,6 +782,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(all(test, feature = "parity-scale-codec"))]
     fn test_encode_decode_flow_tracking_data() {
         let flow_tracking_data = FlowTrackingData {
             ap_tracking: ApTracking {

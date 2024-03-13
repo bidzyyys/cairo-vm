@@ -11,8 +11,6 @@ use felt::Felt252;
 use num_traits::{ToPrimitive, Zero};
 use serde::{Deserialize, Serialize};
 
-use parity_scale_codec::{Decode, Encode};
-
 #[cfg(all(feature = "arbitrary", feature = "std"))]
 use arbitrary::Arbitrary;
 
@@ -23,13 +21,15 @@ pub struct Relocatable {
     pub offset: usize,
 }
 
-impl Encode for Relocatable {
+#[cfg(feature = "parity-scale-codec")]
+impl parity_scale_codec::Encode for Relocatable {
     fn encode(&self) -> Vec<u8> {
         (self.segment_index as i64, self.offset as u64).encode()
     }
 }
 
-impl Decode for Relocatable {
+#[cfg(feature = "parity-scale-codec")]
+impl parity_scale_codec::Decode for Relocatable {
     fn decode<I: parity_scale_codec::Input>(
         input: &mut I,
     ) -> Result<Self, parity_scale_codec::Error> {
@@ -43,8 +43,10 @@ impl Decode for Relocatable {
 }
 
 #[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(Arbitrary))]
-#[derive(
-    Eq, Ord, Hash, PartialEq, PartialOrd, Clone, Debug, Serialize, Deserialize, Encode, Decode,
+#[derive(Eq, Ord, Hash, PartialEq, PartialOrd, Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "parity-scale-codec",
+    derive(parity_scale_codec::Encode, parity_scale_codec::Decode)
 )]
 pub enum MaybeRelocatable {
     RelocatableValue(Relocatable),

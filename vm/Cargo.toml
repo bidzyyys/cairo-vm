@@ -28,6 +28,7 @@ cairo-1-hints = [
 ]
 arbitrary = ["dep:arbitrary", "felt/arbitrary", "felt/std", "std"]
 lambdaworks-felt = ["felt/lambdaworks-felt"]
+parity-scale-codec = ["dep:parity-scale-codec"]
 
 # Note that these features are not retro-compatible with the cairo Python VM.
 test_utils = [
@@ -74,7 +75,9 @@ ark-std = { workspace = true, optional = true }
 # Enable arbitrary when fuzzing
 arbitrary = { workspace = true, features = ["derive"], optional = true }
 
-parity-scale-codec = { workspace = true }
+parity-scale-codec = { version = "3.6.5", features = [
+    "derive",
+], optional = true}
 
 [dev-dependencies]
 assert_matches = "1.5.0"

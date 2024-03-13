@@ -58,8 +58,6 @@ use super::{
     cairo_pie::{self, CairoPie, CairoPieMetadata, CairoPieVersion},
 };
 
-use parity_scale_codec::{Decode, Encode};
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum CairoArg {
     Single(MaybeRelocatable),
@@ -1305,7 +1303,8 @@ pub struct ExecutionResources {
     pub builtin_instance_counter: HashMap<String, usize>,
 }
 
-impl Encode for ExecutionResources {
+#[cfg(feature = "parity-scale-codec")]
+impl parity_scale_codec::Encode for ExecutionResources {
     fn size_hint(&self) -> usize {
         let n_steps_sz = crate::stdlib::mem::size_of::<u64>();
         let n_memory_holes_sz = crate::stdlib::mem::size_of::<u64>();
@@ -1322,19 +1321,20 @@ impl Encode for ExecutionResources {
     }
 
     fn encode_to<T: parity_scale_codec::Output + ?Sized>(&self, dest: &mut T) {
-        Encode::encode_to(&(self.n_steps as u64), dest);
-        Encode::encode_to(&(self.n_memory_holes as u64), dest);
+        parity_scale_codec::Encode::encode_to(&(self.n_steps as u64), dest);
+        parity_scale_codec::Encode::encode_to(&(self.n_memory_holes as u64), dest);
         let builtin_instance_counter: BTreeMap<String, u64> = self
             .builtin_instance_counter
             .clone()
             .into_iter()
             .map(|(k, v)| (k, v as u64))
             .collect();
-        Encode::encode_to(&builtin_instance_counter, dest);
+        parity_scale_codec::Encode::encode_to(&builtin_instance_counter, dest);
     }
 }
 
-impl Decode for ExecutionResources {
+#[cfg(feature = "parity-scale-codec")]
+impl parity_scale_codec::Decode for ExecutionResources {
     fn decode<I: parity_scale_codec::Input>(
         input: &mut I,
     ) -> Result<Self, parity_scale_codec::Error> {
@@ -1459,6 +1459,9 @@ mod tests {
 
     #[cfg(target_arch = "wasm32")]
     use wasm_bindgen_test::*;
+
+    #[cfg(all(test, feature = "parity-scale-codec"))]
+    use parity_scale_codec::{Decode, Encode};
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]

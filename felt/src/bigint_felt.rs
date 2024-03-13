@@ -25,8 +25,6 @@ use num_integer::Integer;
 use num_traits::{Bounded, FromPrimitive, Num, One, Pow, Signed, ToPrimitive, Zero};
 use serde::{Deserialize, Serialize};
 
-use parity_scale_codec::{Decode, Encode, Output};
-
 lazy_static! {
     static ref CAIRO_PRIME_BIGUINT: BigUint =
         (Into::<BigUint>::into(FIELD_HIGH) << 128) + Into::<BigUint>::into(FIELD_LOW);
@@ -42,8 +40,9 @@ pub(crate) struct FeltBigInt<const PH: u128, const PL: u128> {
     val: BigUint,
 }
 
-impl<const PH: u128, const PL: u128> Encode for FeltBigInt<PH, PL> {
-    fn encode_to<T: Output + ?Sized>(&self, dest: &mut T) {
+#[cfg(feature = "parity-scale-codec")]
+impl<const PH: u128, const PL: u128> parity_scale_codec::Encode for FeltBigInt<PH, PL> {
+    fn encode_to<T: parity_scale_codec::Output + ?Sized>(&self, dest: &mut T) {
         // Scale codec has its own way of representing data. The first 2 bits of the first
         // byte determines the type of data it is.
         // NOTE: The compact byte (first byte) is encoded in LE.
@@ -85,7 +84,8 @@ impl<const PH: u128, const PL: u128> Encode for FeltBigInt<PH, PL> {
     }
 }
 
-impl<const PH: u128, const PL: u128> Decode for FeltBigInt<PH, PL> {
+#[cfg(feature = "parity-scale-codec")]
+impl<const PH: u128, const PL: u128> parity_scale_codec::Decode for FeltBigInt<PH, PL> {
     fn decode<I: parity_scale_codec::Input>(
         input: &mut I,
     ) -> Result<Self, parity_scale_codec::Error> {
