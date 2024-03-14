@@ -21,6 +21,21 @@ pub struct Relocatable {
     pub offset: usize,
 }
 
+#[cfg(feature = "scale-info")]
+impl scale_info::TypeInfo for Relocatable {
+    type Identity = Self;
+
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("Relocatable", module_path!()))
+            .composite(
+                scale_info::build::Fields::named()
+                    .field(|f| f.ty::<i64>().name("segment_index").type_name("i64"))
+                    .field(|f| f.ty::<u64>().name("offset").type_name("u64")),
+            )
+    }
+}
+
 #[cfg(feature = "parity-scale-codec")]
 impl parity_scale_codec::Encode for Relocatable {
     fn encode(&self) -> Vec<u8> {
@@ -48,6 +63,7 @@ impl parity_scale_codec::Decode for Relocatable {
     feature = "parity-scale-codec",
     derive(parity_scale_codec::Encode, parity_scale_codec::Decode)
 )]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub enum MaybeRelocatable {
     RelocatableValue(Relocatable),
     Int(Felt252),

@@ -84,6 +84,7 @@ fn get_ids_data(
     feature = "parity-scale-codec",
     derive(parity_scale_codec::Encode, parity_scale_codec::Decode)
 )]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct HintReference {
     pub offset1: OffsetValue,
     pub offset2: OffsetValue,

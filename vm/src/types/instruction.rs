@@ -13,6 +13,7 @@ use arbitrary::Arbitrary;
     feature = "parity-scale-codec",
     derive(parity_scale_codec::Encode, parity_scale_codec::Decode)
 )]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub enum Register {
     AP,
     FP,

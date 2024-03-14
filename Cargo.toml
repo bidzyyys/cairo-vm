@@ -64,6 +64,8 @@ keccak = { version = "0.1.2", default-features = false }
 hashbrown = { version = "0.14.0", features = ["serde"] }
 anyhow = { version = "1.0.69", default-features = false }
 thiserror-no-std = { version = "2.0.2", default-features = false }
+parity-scale-codec = { version = "3.6.5", default-features = false, features = ["derive"] }
+scale-info = { version = "2.10.0", default-features = false, features = ["derive"] }
 
 bitvec = { version = "1", default-features = false, features = ["alloc"] }
 

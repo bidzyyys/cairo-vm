@@ -40,6 +40,20 @@ pub(crate) struct FeltBigInt<const PH: u128, const PL: u128> {
     val: BigUint,
 }
 
+#[cfg(feature = "scale-info")]
+impl<const PH: u128, const PL: u128> scale_info::TypeInfo for FeltBigInt<PH, PL> {
+    type Identity = Self;
+
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("FeltBigInt", module_path!()))
+            .composite(
+                scale_info::build::Fields::named()
+                    .field(|f| f.ty::<Vec<u8>>().name("value").type_name("BigUint")),
+            )
+    }
+}
+
 #[cfg(feature = "parity-scale-codec")]
 impl<const PH: u128, const PL: u128> parity_scale_codec::Encode for FeltBigInt<PH, PL> {
     fn encode_to<T: parity_scale_codec::Output + ?Sized>(&self, dest: &mut T) {

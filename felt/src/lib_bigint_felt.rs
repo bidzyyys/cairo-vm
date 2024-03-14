@@ -75,6 +75,7 @@ macro_rules! felt_str {
     feature = "parity-scale-codec",
     derive(parity_scale_codec::Encode, parity_scale_codec::Decode)
 )]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct Felt252 {
     pub(crate) value: FeltBigInt<FIELD_HIGH, FIELD_LOW>,
 }

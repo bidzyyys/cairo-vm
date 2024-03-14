@@ -69,6 +69,52 @@ pub(crate) struct SharedProgramData {
     pub(crate) reference_manager: Vec<HintReference>,
 }
 
+#[cfg(feature = "scale-info")]
+impl scale_info::TypeInfo for SharedProgramData {
+    type Identity = Self;
+
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("SharedProgramData", module_path!()))
+            .composite(
+                scale_info::build::Fields::named()
+                    .field(|f| {
+                        f.ty::<Vec<MaybeRelocatable>>()
+                            .name("data")
+                            .type_name("Vec<MaybeRelocatable>")
+                    })
+                    .field(|f| {
+                        f.ty::<HintsCollection>()
+                            .name("hints_collection")
+                            .type_name("HintsCollection")
+                    })
+                    .field(|f| f.ty::<Option<u64>>().name("main").type_name("Option<u64>"))
+                    .field(|f| f.ty::<Option<u64>>().name("start").type_name("Option<u64>"))
+                    .field(|f| f.ty::<Option<u64>>().name("end").type_name("Option<u64>"))
+                    .field(|f| {
+                        f.ty::<Vec<Attribute>>()
+                            .name("error_message_attributes")
+                            .type_name("Vec<Attribute>")
+                    })
+                    .field(|f| {
+                        f.ty::<Option<Vec<(u64, InstructionLocation)>>>()
+                            .name("instruction_locations")
+                            .type_name("Option<Vec<(u64, InstructionLocation)>>")
+                    })
+                    .field(|f| {
+                        f.ty::<Vec<(String, Identifier)>>()
+                            .name("identifiers")
+                            .type_name("Vec<(String, Identifier)>")
+                    })
+                    .field(|f| {
+                        f.ty::<Vec<HintReference>>()
+                            .name("reference_manager")
+                            .type_name("Vec<HintReference>")
+                    }),
+            )
+    }
+}
+
 #[cfg(feature = "parity-scale-codec")]
 impl parity_scale_codec::Encode for SharedProgramData {
     fn encode_to<T: parity_scale_codec::Output + ?Sized>(&self, dest: &mut T) {
@@ -197,6 +243,29 @@ pub(crate) struct HintsCollection {
     hints_ranges: Vec<HintRange>,
 }
 
+#[cfg(feature = "scale-info")]
+impl scale_info::TypeInfo for HintsCollection {
+    type Identity = Self;
+
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("HintsCollection", module_path!()))
+            .composite(
+                scale_info::build::Fields::named()
+                    .field(|f| {
+                        f.ty::<Vec<HintParams>>()
+                            .name("hints")
+                            .type_name("Vec<HintParams>")
+                    })
+                    .field(|f| {
+                        f.ty::<Vec<(u64, u64)>>()
+                            .name("hints_ranges")
+                            .type_name("Vec<HintRange>")
+                    }),
+            )
+    }
+}
+
 #[cfg(feature = "parity-scale-codec")]
 impl parity_scale_codec::Encode for HintsCollection {
     fn encode_to<T: parity_scale_codec::Output + ?Sized>(&self, dest: &mut T) {
@@ -303,6 +372,34 @@ pub struct Program {
     pub(crate) shared_program_data: Arc<SharedProgramData>,
     pub(crate) constants: HashMap<String, Felt252>,
     pub(crate) builtins: Vec<BuiltinName>,
+}
+
+#[cfg(feature = "scale-info")]
+impl scale_info::TypeInfo for Program {
+    type Identity = Self;
+
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("Program", module_path!()))
+            .composite(
+                scale_info::build::Fields::named()
+                    .field(|f| {
+                        f.ty::<SharedProgramData>()
+                            .name("shared_program_data")
+                            .type_name("SharedProgramData")
+                    })
+                    .field(|f| {
+                        f.ty::<Vec<(String, Felt252)>>()
+                            .name("constatnts")
+                            .type_name("Vec<(String, Felt252)>")
+                    })
+                    .field(|f| {
+                        f.ty::<Vec<BuiltinName>>()
+                            .name("builtins")
+                            .type_name("Vec<BuiltinName>")
+                    }),
+            )
+    }
 }
 
 #[cfg(feature = "parity-scale-codec")]

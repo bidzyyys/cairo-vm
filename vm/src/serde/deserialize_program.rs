@@ -44,6 +44,7 @@ use arbitrary::{self, Arbitrary, Unstructured};
     feature = "parity-scale-codec",
     derive(parity_scale_codec::Encode, parity_scale_codec::Decode)
 )]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 #[allow(non_camel_case_types)]
 pub enum BuiltinName {
     output,
@@ -94,6 +95,7 @@ pub struct ProgramJson {
     feature = "parity-scale-codec",
     derive(parity_scale_codec::Encode, parity_scale_codec::Decode)
 )]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct HintParams {
     pub code: String,
     pub accessible_scopes: Vec<String>,
@@ -106,6 +108,29 @@ pub struct FlowTrackingData {
     pub ap_tracking: ApTracking,
     #[serde(deserialize_with = "deserialize_map_to_string_and_usize_hashmap")]
     pub reference_ids: HashMap<String, usize>,
+}
+
+#[cfg(feature = "scale-info")]
+impl scale_info::TypeInfo for FlowTrackingData {
+    type Identity = Self;
+
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("FlowTrackingData", module_path!()))
+            .composite(
+                scale_info::build::Fields::named()
+                    .field(|f| {
+                        f.ty::<ApTracking>()
+                            .name("ap_tracking")
+                            .type_name("ApTracking")
+                    })
+                    .field(|f| {
+                        f.ty::<Vec<(String, u64)>>()
+                            .name("reference_ids")
+                            .type_name("Vec<(String, u64)>")
+                    }),
+            )
+    }
 }
 
 #[cfg(feature = "parity-scale-codec")]
@@ -148,6 +173,21 @@ impl parity_scale_codec::Decode for FlowTrackingData {
 pub struct ApTracking {
     pub group: usize,
     pub offset: usize,
+}
+
+#[cfg(feature = "scale-info")]
+impl scale_info::TypeInfo for ApTracking {
+    type Identity = Self;
+
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("ApTracking", module_path!()))
+            .composite(
+                scale_info::build::Fields::named()
+                    .field(|f| f.ty::<u64>().name("group").type_name("u64"))
+                    .field(|f| f.ty::<u64>().name("offset").type_name("u64")),
+            )
+    }
 }
 
 #[cfg(feature = "parity-scale-codec")]
@@ -208,6 +248,45 @@ pub struct Identifier {
     pub cairo_type: Option<String>,
 }
 
+#[cfg(feature = "scale-info")]
+impl scale_info::TypeInfo for Identifier {
+    type Identity = Self;
+
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("Identifier", module_path!()))
+            .composite(
+                scale_info::build::Fields::named()
+                    .field(|f| f.ty::<Option<u64>>().name("pc").type_name("Option<u64>"))
+                    .field(|f| {
+                        f.ty::<Option<String>>()
+                            .name("type_")
+                            .type_name("Option<String>")
+                    })
+                    .field(|f| {
+                        f.ty::<Option<Felt252>>()
+                            .name("value")
+                            .type_name("Option<Felt252>")
+                    })
+                    .field(|f| {
+                        f.ty::<Option<String>>()
+                            .name("full_name")
+                            .type_name("Option<String>")
+                    })
+                    .field(|f| {
+                        f.ty::<Option<Vec<(String, Member)>>>()
+                            .name("members")
+                            .type_name("Option<Vec<(String, Member)>>")
+                    })
+                    .field(|f| {
+                        f.ty::<Option<String>>()
+                            .name("cairo_type")
+                            .type_name("Option<String>")
+                    }),
+            )
+    }
+}
+
 #[cfg(feature = "parity-scale-codec")]
 impl parity_scale_codec::Encode for Identifier {
     fn encode(&self) -> Vec<u8> {
@@ -258,6 +337,21 @@ pub struct Member {
     pub offset: usize,
 }
 
+#[cfg(feature = "scale-info")]
+impl scale_info::TypeInfo for Member {
+    type Identity = Self;
+
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("Member", module_path!()))
+            .composite(
+                scale_info::build::Fields::named()
+                    .field(|f| f.ty::<String>().name("cairo_type").type_name("String"))
+                    .field(|f| f.ty::<u64>().name("offset").type_name("u64")),
+            )
+    }
+}
+
 #[cfg(feature = "parity-scale-codec")]
 impl parity_scale_codec::Encode for Member {
     fn encode(&self) -> Vec<u8> {
@@ -294,6 +388,27 @@ pub struct Attribute {
     pub flow_tracking_data: Option<FlowTrackingData>,
 }
 
+#[cfg(feature = "scale-info")]
+impl scale_info::TypeInfo for Attribute {
+    type Identity = Self;
+
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("Attribute", module_path!()))
+            .composite(
+                scale_info::build::Fields::named()
+                    .field(|f| f.ty::<String>().name("name").type_name("String"))
+                    .field(|f| f.ty::<u64>().name("start_pc").type_name("u64"))
+                    .field(|f| f.ty::<u64>().name("end_pc").type_name("u64"))
+                    .field(|f| f.ty::<String>().name("value").type_name("String"))
+                    .field(|f| {
+                        f.ty::<Option<FlowTrackingData>>()
+                            .name("flow_tracking_data")
+                            .type_name("Option<FlowTrackingData>")
+                    }),
+            )
+    }
+}
 #[cfg(feature = "parity-scale-codec")]
 impl parity_scale_codec::Encode for Attribute {
     fn encode(&self) -> Vec<u8> {
@@ -331,6 +446,7 @@ impl parity_scale_codec::Decode for Attribute {
     feature = "parity-scale-codec",
     derive(parity_scale_codec::Encode, parity_scale_codec::Decode)
 )]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct Location {
     pub end_line: u32,
     pub end_col: u32,
@@ -379,6 +495,7 @@ pub struct DebugInfo {
     feature = "parity-scale-codec",
     derive(parity_scale_codec::Encode, parity_scale_codec::Decode)
 )]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct InstructionLocation {
     pub inst: Location,
     pub hints: Vec<HintLocation>,
@@ -390,6 +507,7 @@ pub struct InstructionLocation {
     feature = "parity-scale-codec",
     derive(parity_scale_codec::Encode, parity_scale_codec::Decode)
 )]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct InputFile {
     pub filename: String,
 }
@@ -400,6 +518,7 @@ pub struct InputFile {
     feature = "parity-scale-codec",
     derive(parity_scale_codec::Encode, parity_scale_codec::Decode)
 )]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct HintLocation {
     pub location: Location,
     pub n_prefix_newlines: u32,
@@ -457,6 +576,30 @@ pub struct Reference {
     pub value_address: ValueAddress,
 }
 
+#[cfg(feature = "scale-info")]
+impl scale_info::TypeInfo for Reference {
+    type Identity = Self;
+
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("Reference", module_path!()))
+            .composite(
+                scale_info::build::Fields::named()
+                    .field(|f| {
+                        f.ty::<ApTracking>()
+                            .name("ap_tracking_data")
+                            .type_name("ApTracking")
+                    })
+                    .field(|f| f.ty::<Option<u64>>().name("pc").type_name("Option<u64>"))
+                    .field(|f| {
+                        f.ty::<ValueAddress>()
+                            .name("value_address")
+                            .type_name("ValueAddress")
+                    }),
+            )
+    }
+}
+
 #[cfg(feature = "parity-scale-codec")]
 impl parity_scale_codec::Encode for Reference {
     fn encode(&self) -> Vec<u8> {
@@ -491,6 +634,7 @@ impl parity_scale_codec::Decode for Reference {
     feature = "parity-scale-codec",
     derive(parity_scale_codec::Encode, parity_scale_codec::Decode)
 )]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub enum OffsetValue {
     Immediate(Felt252),
     Value(i32),
@@ -503,6 +647,7 @@ pub enum OffsetValue {
     feature = "parity-scale-codec",
     derive(parity_scale_codec::Encode, parity_scale_codec::Decode)
 )]
+#[cfg_attr(feature = "scale-info", derive(scale_info::TypeInfo))]
 pub struct ValueAddress {
     pub offset1: OffsetValue,
     pub offset2: OffsetValue,

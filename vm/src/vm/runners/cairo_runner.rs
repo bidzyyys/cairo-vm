@@ -1303,6 +1303,26 @@ pub struct ExecutionResources {
     pub builtin_instance_counter: HashMap<String, usize>,
 }
 
+#[cfg(feature = "scale-info")]
+impl scale_info::TypeInfo for ExecutionResources {
+    type Identity = Self;
+
+    fn type_info() -> scale_info::Type {
+        scale_info::Type::builder()
+            .path(scale_info::Path::new("ExecutionResources", module_path!()))
+            .composite(
+                scale_info::build::Fields::named()
+                    .field(|f| f.ty::<u64>().name("n_steps").type_name("u64"))
+                    .field(|f| f.ty::<u64>().name("n_memory_holes").type_name("u64"))
+                    .field(|f| {
+                        f.ty::<Vec<(String, u64)>>()
+                            .name("builtin_instance_counter")
+                            .type_name("Vec<(String, u64)>")
+                    }),
+            )
+    }
+}
+
 #[cfg(feature = "parity-scale-codec")]
 impl parity_scale_codec::Encode for ExecutionResources {
     fn size_hint(&self) -> usize {

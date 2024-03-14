@@ -19,6 +19,8 @@ std = [
     "felt/std",
     "dep:num-prime",
     "thiserror-no-std/std",
+    "parity-scale-codec?/std",
+    "scale-info?/std",
 ]
 cairo-1-hints = [
     "dep:cairo-lang-starknet-classes",
@@ -28,7 +30,8 @@ cairo-1-hints = [
 ]
 arbitrary = ["dep:arbitrary", "felt/arbitrary", "felt/std", "std"]
 lambdaworks-felt = ["felt/lambdaworks-felt"]
-parity-scale-codec = ["dep:parity-scale-codec"]
+parity-scale-codec = ["dep:parity-scale-codec", "felt/parity-scale-codec"]
+scale-info = ["dep:scale-info", "felt/scale-info"]
 
 # Note that these features are not retro-compatible with the cairo Python VM.
 test_utils = [
@@ -75,9 +78,8 @@ ark-std = { workspace = true, optional = true }
 # Enable arbitrary when fuzzing
 arbitrary = { workspace = true, features = ["derive"], optional = true }
 
-parity-scale-codec = { version = "3.6.5", features = [
-    "derive",
-], optional = true}
+parity-scale-codec = { workspace = true, optional = true}
+scale-info = { workspace = true, optional = true}
 
 [dev-dependencies]
 assert_matches = "1.5.0"
