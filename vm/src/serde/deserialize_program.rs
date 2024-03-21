@@ -75,11 +75,14 @@ impl BuiltinName {
 }
 
 #[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(Arbitrary, Clone))]
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct ProgramJson {
     pub prime: String,
     pub builtins: Vec<BuiltinName>,
-    #[serde(deserialize_with = "deserialize_array_of_bigint_hex")]
+    #[serde(
+        deserialize_with = "deserialize_array_of_bigint_hex",
+        serialize_with = "serialize_program_data"
+    )]
     pub data: Vec<MaybeRelocatable>,
     pub identifiers: HashMap<String, Identifier>,
     pub hints: BTreeMap<usize, Vec<HintParams>>,
@@ -842,6 +845,22 @@ pub fn deserialize_and_parse_program(
 ) -> Result<Program, ProgramError> {
     let program_json: ProgramJson = deserialize_program_json(reader)?;
     parse_program_json(program_json, entrypoint)
+}
+
+pub fn serialize_program_data<S: serde::Serializer>(
+    v: &[MaybeRelocatable],
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    let v = v
+        .iter()
+        .map(|val| match val.clone() {
+            MaybeRelocatable::Int(value) => format!("0x{:x}", value.to_biguint()),
+            MaybeRelocatable::RelocatableValue(_) => {
+                panic!("Got unexpected relocatable value in program data")
+            }
+        })
+        .collect::<Vec<String>>();
+    v.serialize(serializer)
 }
 
 pub fn parse_program_json(
