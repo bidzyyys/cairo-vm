@@ -89,6 +89,43 @@ pub struct ProgramJson {
     pub debug_info: Option<DebugInfo>,
 }
 
+impl From<Program> for ProgramJson {
+    fn from(program: Program) -> Self {
+        let references = program
+            .shared_program_data
+            .reference_manager
+            .iter()
+            .map(|hr| Reference {
+                ap_tracking_data: hr.ap_tracking_data.as_ref().unwrap().clone(),
+                pc: None,
+                value_address: ValueAddress {
+                    offset1: hr.offset1.clone(),
+                    offset2: hr.offset2.clone(),
+                    dereference: hr.dereference,
+                    value_type: hr.cairo_type.as_ref().unwrap().clone(),
+                },
+            })
+            .collect();
+
+        ProgramJson {
+            prime: program.prime().to_string(),
+            builtins: program.builtins,
+            data: program.shared_program_data.data.clone(),
+            identifiers: program.shared_program_data.identifiers.clone(),
+            hints: (&program.shared_program_data.hints_collection).into(),
+            reference_manager: ReferenceManager { references },
+            attributes: program.shared_program_data.error_message_attributes.clone(),
+            debug_info: program
+                .shared_program_data
+                .instruction_locations
+                .as_ref()
+                .map(|instruction_locations| DebugInfo {
+                    instruction_locations: instruction_locations.clone(),
+                }),
+        }
+    }
+}
+
 #[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(Arbitrary))]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(
