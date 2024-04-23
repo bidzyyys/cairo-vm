@@ -17,11 +17,9 @@ use crate::{
     hint_processor::hint_processor_definition::HintReference,
     serde::deserialize_program::{
         deserialize_and_parse_program, Attribute, BuiltinName, HintParams, Identifier,
-        InstructionLocation, OffsetValue, ReferenceManager,
+        InstructionLocation, ReferenceManager,
     },
-    types::{
-        errors::program_errors::ProgramError, instruction::Register, relocatable::MaybeRelocatable,
-    },
+    types::{errors::program_errors::ProgramError, relocatable::MaybeRelocatable},
 };
 #[cfg(feature = "cairo-1-hints")]
 use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
@@ -555,21 +553,12 @@ impl Program {
         reference_manager
             .references
             .iter()
-            .map(|r| {
-                HintReference {
-                    offset1: r.value_address.offset1.clone(),
-                    offset2: r.value_address.offset2.clone(),
-                    dereference: r.value_address.dereference,
-                    // only store `ap` tracking data if the reference is referred to it
-                    ap_tracking_data: match (&r.value_address.offset1, &r.value_address.offset2) {
-                        (OffsetValue::Reference(Register::AP, _, _), _)
-                        | (_, OffsetValue::Reference(Register::AP, _, _)) => {
-                            Some(r.ap_tracking_data.clone())
-                        }
-                        _ => None,
-                    },
-                    cairo_type: Some(r.value_address.value_type.clone()),
-                }
+            .map(|r| HintReference {
+                offset1: r.value_address.offset1.clone(),
+                offset2: r.value_address.offset2.clone(),
+                dereference: r.value_address.dereference,
+                ap_tracking_data: Some(r.ap_tracking_data.clone()),
+                cairo_type: Some(r.value_address.value_type.clone()),
             })
             .collect()
     }
